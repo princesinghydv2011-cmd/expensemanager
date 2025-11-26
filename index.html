@@ -1,539 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Aurora — Expense Manager</title>
-
-<!-- Chart.js -->
+<meta charset="UTF-8">
+<title>Premium Expense Manager</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- Feather icons -->
-<script src="https://unpkg.com/feather-icons"></script>
-
-<!-- Google Font -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-  :root{
-    --bg: #0f1724;
-    --card: rgba(255,255,255,0.06);
-    --muted: rgba(255,255,255,0.72);
-    --accent: linear-gradient(90deg,#7c3aed 0%,#06b6d4 100%);
-    --glass: rgba(255,255,255,0.04);
-    --success: #16a34a;
-    --danger: #ef4444;
-    --glass-border: rgba(255,255,255,0.06);
-    --radius: 14px;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:
-    radial-gradient(900px 500px at 10% 10%, rgba(124,58,237,0.12), transparent 8%),
-    radial-gradient(700px 400px at 90% 90%, rgba(6,182,212,0.08), transparent 6%),
-    var(--bg);
-    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-    color: #e6eef6;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    padding:28px;
-  }
+body{font-family:Poppins, sans-serif;background:#f5f8ff;margin:0;}
+.container{max-width:1100px;margin:auto;padding:20px;}
+.card{background:white;padding:20px;border-radius:15px;margin-top:15px;
+      box-shadow:0 0 20px rgba(0,0,0,0.15);}
+h2{text-align:center;color:#007bff;}
 
-  /* Layout */
-  .app {
-    display: grid;
-    grid-template-columns: 260px 1fr;
-    gap: 26px;
-    max-width:1250px;
-    margin:0 auto;
-  }
+input,button{padding:12px;border-radius:10px;width:100%;border:1px solid #ccc;margin:5px 0;}
+button{background:#007bff;color:white;font-weight:bold;cursor:pointer;}
+button:hover{background:#0056b3;}
 
-  /* Sidebar */
-  .sidebar {
-    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-    border-radius: var(--radius);
-    padding:20px;
-    border:1px solid var(--glass-border);
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-    min-height:640px;
-    backdrop-filter: blur(6px) saturate(120%);
-  }
-  .brand {
-    display:flex;gap:12px;align-items:center;
-  }
-  .logo {
-    width:48px;height:48px;border-radius:12px;
-    background:var(--accent);
-    display:flex;align-items:center;justify-content:center;font-weight:800;color:white;
-    box-shadow: 0 6px 18px rgba(7,89,133,0.12), inset 0 -6px 20px rgba(0,0,0,0.12);
-  }
-  .brand h1{font-size:18px;margin:0}
-  .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+#logoutBtn{background:#ff1744;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #ccc;padding:10px;text-align:center;}
+th{background:#007bff;color:white;}
 
-  .profile-list{margin-top:10px; display:flex;flex-direction:column; gap:8px; max-height:260px; overflow:auto;padding-right:6px}
-  .profile-item {
-    display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;
-    transition:all .18s ease;
-    border:1px solid transparent;
-  }
-  .profile-item:hover{transform:translateY(-4px); box-shadow:0 10px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
-  .avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(180deg,#1f2937,#111827);display:flex;align-items:center;justify-content:center;color:#9ca3af;font-weight:700}
-  .profile-name{font-weight:600}
-  .profile-meta{font-size:12px;color:var(--muted)}
+.progress{background:#ddd;height:12px;border-radius:10px;margin-top:10px;}
+.progress-bar{height:12px;border-radius:10px;background:#00c853;width:0%;}
 
-  .controls { margin-top:auto; display:flex; gap:8px; flex-direction:column; }
-  .btn { padding:10px 12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; color:white; background:linear-gradient(90deg,#06b6d4,#7c3aed); box-shadow:0 8px 24px rgba(7,89,133,0.12);}
-  .btn.ghost { background:transparent; border:1px dashed rgba(255,255,255,0.06); color:var(--muted); box-shadow:none }
-  .small { font-size:13px; padding:9px 10px }
-
-  /* Main area */
-  .main {
-    display:flex;flex-direction:column;gap:18px;
-  }
-
-  .topbar {
-    display:flex;align-items:center;justify-content:space-between; gap:12px;
-  }
-
-  .searchbar {
-    flex:1; display:flex; gap:10px;
-    background:var(--glass); padding:10px;border-radius:12px;border:1px solid var(--glass-border);
-    align-items:center;
-  }
-  .searchbar input {
-    background:transparent;border:none;outline:none;color:inherit;font-size:15px;
-  }
-  .top-actions { display:flex;gap:8px;align-items:center }
-
-  /* Dashboard cards */
-  .grid {
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap:16px;
-  }
-
-  .card {
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-    border-radius:14px;padding:18px;border:1px solid var(--glass-border);
-    box-shadow: 0 8px 26px rgba(2,6,23,0.6);
-  }
-  .card h4{margin:0 0 8px 0;font-size:13px;color:var(--muted)}
-  .card .value{font-size:22px;font-weight:700}
-
-  /* Chart & table section */
-  .content {
-    display:grid;grid-template-columns: 1fr 420px; gap:18px;
-    align-items:start;
-  }
-  .expenses-table { overflow:auto; max-height:420px; border-radius:12px; }
-  table { width:100%; border-collapse:collapse; color:#dbeafe; }
-  thead th { text-align:left; padding:12px 14px; font-weight:700; font-size:13px; color:#c7d2fe; background:transparent; border-bottom:1px solid rgba(255,255,255,0.04)}
-  tbody td { padding:12px 14px; border-bottom:1px dashed rgba(255,255,255,0.03); font-size:14px }
-
-  .muted { color:var(--muted); font-size:13px }
-
-  /* footer */
-  .footer { text-align:center; color:rgba(255,255,255,0.48); font-size:13px; margin-top:8px }
-
-  /* Modal */
-  .modal-backdrop{ position:fixed; inset:0; background: rgba(2,6,23,0.6); display:none; align-items:center; justify-content:center; z-index:60 }
-  .modal { width:420px; background: linear-gradient(180deg,#041026, #081020); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.04); box-shadow:0 30px 70px rgba(2,6,23,0.9)}
-  .modal h3 { margin:0 0 10px 0 }
-  .form-row { display:flex;flex-direction:column; gap:8px; margin-bottom:10px }
-  .form-row input { padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06); background:transparent;color:inherit }
-
-  /* Responsive */
-  @media (max-width: 980px){
-    .app{ grid-template-columns: 1fr; padding:18px }
-    .grid{ grid-template-columns: repeat(2,1fr) }
-    .content{ grid-template-columns:1fr }
-    .sidebar{ order:2; min-height:unset }
-  }
-  @media (max-width:640px){
-    .grid{ grid-template-columns: 1fr }
-  }
+.summary{display:flex;gap:15px;}
+.box{flex:1;background:#e3f2fd;padding:15px;text-align:center;border-radius:10px;font-weight:bold;}
 </style>
 </head>
+
 <body>
+<div class="container">
 
-<div class="app" role="application" aria-label="Aurora Expense Manager">
+<h2>💸 Premium Expense Dashboard</h2>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar" aria-label="Sidebar">
-    <div class="brand" role="banner">
-      <div class="logo">A</div>
-      <div>
-        <h1>Aurora</h1>
-        <div class="subtitle">Smart Expense Manager</div>
-      </div>
-    </div>
-
-    <div style="margin-top:6px;font-size:13px;color:var(--muted)">Profiles</div>
-    <div id="profileList" class="profile-list" aria-live="polite"></div>
-
-    <div class="controls">
-      <button class="btn" id="openCreateBtn"><i data-feather="user-plus"></i> Create Profile</button>
-      <button class="btn ghost small" id="openLoginBtn"><i data-feather="log-in"></i> Login to Edit</button>
-      <button class="btn ghost small" id="openSearchBtn"><i data-feather="search"></i> Search / View</button>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-    <div class="topbar">
-      <div class="searchbar" role="search" aria-label="Search expenses">
-        <i data-feather="search" style="width:18px;height:18px;opacity:0.9"></i>
-        <input id="globalSearch" placeholder="Search user / item / category / date (press Enter)" />
-      </div>
-
-      <div class="top-actions">
-        <div id="userBadge" style="display:flex;align-items:center;gap:10px">
-          <div style="text-align:right">
-            <div style="font-weight:700" id="badgeName">Guest</div>
-            <div style="font-size:12px;color:var(--muted)" id="badgeMode">View only</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid" aria-hidden="false">
-      <div class="card">
-        <h4>Total Spent</h4>
-        <div class="value" id="cardTotal">Rs 0</div>
-        <div class="muted" id="cardPeriod">—</div>
-      </div>
-
-      <div class="card">
-        <h4>Remaining Budget</h4>
-        <div class="value" id="cardRemaining">Rs 0</div>
-        <div class="muted">Set per user</div>
-      </div>
-
-      <div class="card">
-        <h4>Items</h4>
-        <div class="value" id="cardItems">0</div>
-        <div class="muted">Expenses listed</div>
-      </div>
-    </div>
-
-    <div class="content">
-      <div>
-        <div class="card" style="margin-bottom:12px;">
-          <h4 style="display:flex;justify-content:space-between;align-items:center">
-            <span>Expenses</span>
-            <div style="display:flex;gap:8px">
-              <button class="btn small" id="addExpenseBtn"><i data-feather="plus-circle"></i> Add</button>
-              <button class="btn small ghost" id="logoutBtnTop" title="Logout" style="display:none"><i data-feather="log-out"></i></button>
-            </div>
-          </h4>
-
-          <div class="expenses-table" id="expensesWrap" role="region" aria-label="Expenses table">
-            <table>
-              <thead>
-                <tr><th>User</th><th>Item</th><th>Amount</th><th>Date</th><th>Category</th></tr>
-              </thead>
-              <tbody id="expenseTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="card">
-          <h4>Category Breakdown</h4>
-          <canvas id="chartCanvas" width="380" height="300" aria-label="Category chart"></canvas>
-          <div class="muted" style="margin-top:10px">Tip: Create profile & login to edit your data.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">Made with ♥ — Aurora Expense Manager</div>
-  </main>
+<div class="card">
+<h3>Create Profile</h3>
+<input id="newUser" placeholder="Name">
+<input id="newPass" maxlength="16" placeholder="16 character password">
+<button onclick="createProfile()">Create Account</button>
 </div>
 
-<!-- MODALS -->
-<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
-  <div class="modal" id="modalContent">
-    <!-- dynamic modal content -->
-  </div>
+<div class="card">
+<h3>Search User (View Only)</h3>
+<input id="searchUser" placeholder="Search user profile">
+<button onclick="viewProfile()">Search</button>
+</div>
+
+<div class="card">
+<h3>Login</h3>
+<input id="loginUser" placeholder="Username">
+<input id="loginPass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<div id="loggedUser" style="text-align:center;font-weight:bold;margin:10px;"></div>
+</div>
+
+<div class="card">
+<h3>Set Monthly Budget (Only when logged in)</h3>
+<input id="budgetAmount" type="number" placeholder="Budget Amount">
+<button onclick="saveBudget()">Save Budget</button>
+<div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+<p id="budgetText"></p>
+</div>
+
+<div class="card">
+<h3>Add Expense</h3>
+<input id="item" placeholder="Item name">
+<input id="amount" type="number" placeholder="Amount">
+<input id="date" type="date">
+<input id="category" placeholder="Category">
+<button onclick="addExpense()">Add Expense</button>
+<button id="logoutBtn" onclick="logout()">Logout</button>
+</div>
+
+<div class="summary">
+<div class="box" id="totalSpent">Total Spent: Rs 0</div>
+<div class="box" id="totalItems">Total Items: 0</div>
+<div class="box" id="remainingBudget">Remaining: Rs 0</div>
+</div>
+
+<div class="card">
+<canvas id="chartCanvas"></canvas>
+</div>
+
+<div class="card">
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Amount</th>
+<th>Date</th>
+<th>Category</th>
+<th>Save</th>
+<th>Delete</th>
+</tr>
+</thead>
+<tbody id="expenseTable"></tbody>
+</table>
+</div>
 </div>
 
 <script>
-/* ===========================
-   Data model + persistence
-   =========================== */
-let users = JSON.parse(localStorage.getItem('aurora_users') || '[]');   // {name, pass}
-let expenses = JSON.parse(localStorage.getItem('aurora_expenses') || '[]'); // {user,item,amount,date,category}
-let budgets  = JSON.parse(localStorage.getItem('aurora_budgets') || '{}'); // { user: {amount, days} }
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+let budgets = JSON.parse(localStorage.getItem("budgets")) || {};
+let currentUser = null;
+let chart;
 
-let loggedUser = null;  // name string when logged in
-let viewingUser = null; // user currently being viewed (string)
-let chart = null;
-
-/* Save helper */
-function persist(){
-  localStorage.setItem('aurora_users', JSON.stringify(users));
-  localStorage.setItem('aurora_expenses', JSON.stringify(expenses));
-  localStorage.setItem('aurora_budgets', JSON.stringify(budgets));
+// Save to memory
+function save() {
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+    localStorage.setItem("budgets", JSON.stringify(budgets));
 }
 
-/* Utility */
-function el(id){ return document.getElementById(id); }
-function fmt(n){ return n ? Number(n).toLocaleString() : '0'; }
-
-/* ===========================
-   UI: Profiles list
-   =========================== */
-function renderProfiles(){
-  const list = el('profileList'); list.innerHTML='';
-  users.forEach(u=>{
-    const div = document.createElement('div');
-    div.className='profile-item';
-    div.innerHTML = `<div class="avatar">${u.name.slice(0,2).toUpperCase()}</div>
-      <div style="flex:1">
-        <div class="profile-name">${u.name}</div>
-        <div class="profile-meta">click to view</div>
-      </div>`;
-    div.onclick = ()=> { openViewModal(u.name); };
-    list.appendChild(div);
-  });
+// Create user
+function createProfile() {
+    const n = newUser.value.trim(), p = newPass.value.trim();
+    if(!n || p.length !== 16) return alert("Enter valid name and 16 character password!");
+    if(users.some(u=>u.name===n)) return alert("User already exists!");
+    users.push({name:n, pass:p});
+    save();
+    alert("Profile Created Successfully!");
 }
 
-/* ===========================
-   Modal system (single)
-   =========================== */
-const backdrop = el('modalBackdrop');
-const modalContent = el('modalContent');
-
-function showModal(html){
-  modalContent.innerHTML = html;
-  backdrop.style.display='flex';
-  feather.replace();
-}
-function closeModal(){ backdrop.style.display='none'; modalContent.innerHTML=''; }
-
-backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) closeModal(); });
-
-/* ===========================
-   Create profile modal
-   =========================== */
-el('openCreateBtn').onclick = ()=>{
-  showModal(`
-    <h3>Create Profile</h3>
-    <div class="form-row"><input id="m_newName" placeholder="Full name"></div>
-    <div class="form-row"><input id="m_newPass" placeholder="Set 16-char password" maxlength="16"></div>
-    <div style="display:flex;gap:8px"><button class="btn" id="mCreate">Create</button><button class="btn ghost" id="mClose">Cancel</button></div>
-  `);
-  el('mClose').onclick = closeModal;
-  el('mCreate').onclick = ()=> {
-    const n = el('m_newName').value.trim(); const p = el('m_newPass').value;
-    if(!n || p.length!==16){ alert('Enter a name and a 16 character password'); return; }
-    if(users.some(u=>u.name===n)){ alert('User exists'); return; }
-    users.push({name:n, pass:p}); persist(); renderProfiles(); closeModal(); alert('Profile created — remember your 16-char password');
-  };
-};
-
-/* ===========================
-   Login modal
-   =========================== */
-el('openLoginBtn').onclick = ()=>{
-  showModal(`
-    <h3>Login</h3>
-    <div class="form-row"><input id="m_loginName" placeholder="Name"></div>
-    <div class="form-row"><input id="m_loginPass" placeholder="Password" maxlength="16"></div>
-    <div style="display:flex;gap:8px"><button class="btn" id="mLoginBtn">Login</button><button class="btn ghost" id="mClose2">Cancel</button></div>
-  `);
-  el('mClose2').onclick=closeModal;
-  el('mLoginBtn').onclick = ()=> {
-    const n = el('m_loginName').value.trim(); const p = el('m_loginPass').value;
-    const u = users.find(x=>x.name===n && x.pass===p);
-    if(!u){ alert('Wrong name or password'); return; }
-    loggedUser = n; viewingUser = n; closeModal(); onLogin();
-  };
-};
-
-/* ===========================
-   Search / View modal
-   =========================== */
-el('openSearchBtn').onclick = ()=> openViewModal();
-
-function openViewModal(preName){
-  showModal(`
-    <h3>View Profile</h3>
-    <div class="form-row"><input id="m_viewName" placeholder="Enter name to view" value="${preName||''}"></div>
-    <div class="form-row"><input id="m_viewPass" placeholder="(optional) enter 16-char password to edit" maxlength="16"></div>
-    <div style="display:flex;gap:8px"><button class="btn" id="mViewBtn">Open</button><button class="btn ghost" id="mClose3">Cancel</button></div>
-  `);
-  el('mClose3').onclick=closeModal;
-  el('mViewBtn').onclick = ()=>{
-    const name = el('m_viewName').value.trim(); const pass = el('m_viewPass').value;
-    if(!name){ alert('Enter a name'); return; }
-    const u = users.find(x=>x.name===name);
-    if(!u){ alert('User not found'); return; }
-    // check pass
-    const editable = (pass && pass===u.pass);
-    viewingUser = name;
-    closeModal();
-    if(editable){ loggedUser = name; onLogin(); } else { onViewOnly(); }
-  };
+// Search
+function viewProfile() {
+    currentUser = null;
+    updateTable(searchUser.value.trim());
+    loggedUser.innerText = "Viewing only: " + searchUser.value.trim();
 }
 
-/* ===========================
-   Add expense modal (requires login)
-   =========================== */
-el('addExpenseBtn').onclick = ()=>{
-  if(!loggedUser){ alert('Login first to add/edit your data.'); return; }
-  showModal(`
-    <h3>Add Expense — ${loggedUser}</h3>
-    <div class="form-row"><input id="m_item" placeholder="Item (e.g., Lunch)"></div>
-    <div class="form-row"><input id="m_amount" type="number" placeholder="Amount"></div>
-    <div class="form-row"><input id="m_date" type="date"></div>
-    <div class="form-row"><input id="m_cat" placeholder="Category (Food, Transport, etc)"></div>
-    <div style="display:flex;gap:8px"><button class="btn" id="mAdd">Add</button><button class="btn ghost" id="mCloseAdd">Cancel</button></div>
-  `);
-  el('mCloseAdd').onclick = closeModal;
-  el('mAdd').onclick = ()=>{
-    const item = el('m_item').value.trim(); const amount = el('m_amount').value; const date = el('m_date').value; const cat = el('m_cat').value.trim() || 'Other';
-    if(!item || !amount || !date){ alert('Fill fields'); return; }
-    expenses.push({ user: loggedUser, item, amount: Number(amount), date, category: cat });
-    persist(); closeModal(); renderView();
-  };
-};
-
-/* ===========================
-   Login/logout UI handlers
-   =========================== */
-function onLogin(){
-  el('badgeName').innerText = loggedUser;
-  el('badgeMode').innerText = 'Editing';
-  el('logoutBtnTop').style.display = 'inline-block';
-  renderProfiles();
-  renderView();
-}
-el('logoutBtnTop').onclick = ()=>{ loggedUser=null; viewingUser=null; onLogout(); };
-
-function onLogout(){
-  el('badgeName').innerText = 'Guest';
-  el('badgeMode').innerText = 'View only';
-  el('logoutBtnTop').style.display = 'none';
-  renderView();
+// Login
+function login() {
+    const name = loginUser.value.trim(), pass = loginPass.value.trim();
+    if(!users.find(u => u.name===name && u.pass===pass)) return alert("Wrong login");
+    currentUser = name;
+    loggedUser.innerText = "Logged in as: " + currentUser;
+    updateTable(currentUser);
+    updateBudgetUI();
 }
 
-/* ===========================
-   View only (no edit)
-   =========================== */
-function onViewOnly(){
-  el('badgeName').innerText = viewingUser;
-  el('badgeMode').innerText = 'Viewing (no edit)';
-  el('logoutBtnTop').style.display = 'none';
-  loggedUser = null;
-  renderView();
+// Logout
+function logout() {
+    currentUser = null;
+    loggedUser.innerText = "Logged out";
+    updateTable("");
+    updateBudgetUI();
 }
 
-/* ===========================
-   Render the selected user's view (table + chart + cards)
-   =========================== */
-function renderView(){
-  if(!viewingUser){ // clear
-    el('expenseTable').innerHTML=''; el('chartCanvas').getContext('2d').clearRect(0,0,1,1);
-    el('cardTotal').innerText='Rs 0'; el('cardItems').innerText='0'; el('cardRemaining').innerText='Rs 0'; return;
-  }
-  // filter expenses
-  const list = expenses.filter(e=>e.user===viewingUser);
-  // table
-  const tbody = el('expenseTable'); tbody.innerHTML='';
-  list.forEach(e=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(e.user)}</td><td>${escapeHtml(e.item)}</td><td>Rs ${fmt(e.amount)}</td><td>${escapeHtml(e.date)}</td><td>${escapeHtml(e.category)}</td>`;
-    tbody.appendChild(tr);
-  });
-  // totals
-  const total = list.reduce((s,i)=>s + Number(i.amount),0);
-  el('cardTotal').innerText = 'Rs ' + fmt(total);
-  el('cardItems').innerText = list.length;
-  // budget if set
-  const b = budgets[viewingUser];
-  if(b){ el('cardRemaining').innerText = 'Rs ' + fmt(b.amount - total); el('cardPeriod').innerText = `${b.days} days`; }
-  else { el('cardRemaining').innerText = '—'; el('cardPeriod').innerText = 'No budget set'; }
-
-  // categories
-  const catmap = {};
-  list.forEach(i=> catmap[i.category] = (catmap[i.category]||0)+Number(i.amount));
-  drawChart(catmap);
+// Save budget
+function saveBudget() {
+    if(!currentUser) return alert("Login first");
+    budgets[currentUser] = Number(budgetAmount.value);
+    save();
+    updateBudgetUI();
 }
 
-/* ===========================
-   Chart
-   =========================== */
-function drawChart(map){
-  const ctx = el('chartCanvas').getContext('2d');
-  if(chart) chart.destroy();
-  const labels = Object.keys(map); const data = Object.values(map);
-  if(labels.length===0){
-    // blank placeholder
-    chart = new Chart(ctx, { type:'pie', data:{ labels:['No data'], datasets:[{ data:[1], backgroundColor:['rgba(255,255,255,0.08)']}]}, options:{plugins:{legend:{display:false}}} });
-    return;
-  }
-  const colors = labels.map((_,i)=>`hsl(${(i*75)%360} 72% 55%)`);
-  chart = new Chart(ctx, {
-    type:'pie',
-    data:{ labels, datasets:[{ data, backgroundColor:colors }]},
-    options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#e6eef6' } } } }
-  });
-}
-
-/* ===========================
-   Global search input
-   =========================== */
-el('globalSearch').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter'){
-    const q = e.target.value.trim().toLowerCase();
-    if(!q) return;
-    // If matches a user name exactly -> open view
-    const userMatch = users.find(u=>u.name.toLowerCase()===q);
-    if(userMatch){ viewingUser = userMatch.name; loggedUser=null; onViewOnly(); return; }
-    // Otherwise: search expenses for all users -> render combined table (temporarily)
-    // We'll show results under "Viewing: Search results"
-    viewingUser = null;
-    el('badgeName').innerText = 'Search results';
-    el('badgeMode').innerText = `"${q}"`;
-    // filter
-    const results = expenses.filter(e=>{
-      return e.user.toLowerCase().includes(q) || e.item.toLowerCase().includes(q) || e.category.toLowerCase().includes(q) || e.date.includes(q);
+// Add expense
+function addExpense() {
+    if(!currentUser) return alert("Login first");
+    expenses.push({
+        user: currentUser,
+        item: item.value,
+        amount: Number(amount.value),
+        date: date.value,
+        category: category.value
     });
-    // render table
-    const tbody = el('expenseTable'); tbody.innerHTML='';
-    results.forEach(e=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(e.user)}</td><td>${escapeHtml(e.item)}</td><td>Rs ${fmt(e.amount)}</td><td>${escapeHtml(e.date)}</td><td>${escapeHtml(e.category)}</td>`;
-      tbody.appendChild(tr);
+    save();
+    updateTable(currentUser);
+}
+
+// Update table
+function updateTable(name) {
+    const t = document.getElementById("expenseTable");
+    t.innerHTML = "";
+    let total = 0, cat = {};
+    expenses.forEach((e,i)=>{
+        if(e.user === name) {
+            total += Number(e.amount);
+            cat[e.category] = (cat[e.category] || 0) + Number(e.amount);
+
+            t.innerHTML += `<tr>
+                <td><input value="${e.item}" onchange="expenses[${i}].item=this.value"></td>
+                <td><input type="number" value="${e.amount}" onchange="expenses[${i}].amount=Number(this.value)"></td>
+                <td><input type="date" value="${e.date}" onchange="expenses[${i}].date=this.value"></td>
+                <td><input value="${e.category}" onchange="expenses[${i}].category=this.value"></td>
+                <td><button onclick="saveExpense(${i})">💾 Save</button></td>
+                <td><button onclick="deleteExpense(${i})">🗑</button></td>
+            </tr>`;
+        }
     });
-    // summary
-    const total = results.reduce((s,i)=>s+Number(i.amount),0);
-    el('cardTotal').innerText = 'Rs ' + fmt(total);
-    el('cardItems').innerText = results.length;
-    drawChart(Object.entries(results.reduce((m,i)=>{ m[i.category]=(m[i.category]||0)+Number(i.amount); return m; },{})));
-  }
-});
 
-/* ===========================
-   Escape HTML helper
-   =========================== */
-function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+    totalSpent.innerText = "Total Spent: Rs " + total;
+    totalItems.innerText = "Total Items: " + t.rows.length;
+    if(budgets[name]) remainingBudget.innerText = "Remaining: Rs " + (budgets[name]-total);
 
-/* ===========================
-   Initialization
-   =========================== */
-renderProfiles();
-renderView();
+    updateBudgetBar(total, budgets[name]);
+    drawChart(cat);
+}
 
-/* Feather icons */
-feather.replace();
+// Save edited expense
+function saveExpense(i){
+    save();
+    updateTable(currentUser);
+}
 
-/* Expose renderView for modals */
-function renderView(){ renderViewInternal(); }
-function renderViewInternal(){ renderView(); } // alias to satisfy modal callbacks (keeps code readable)
+// Delete expense
+function deleteExpense(i){
+    expenses.splice(i,1);
+    save();
+    updateTable(currentUser);
+}
 
+// Budget bar
+function updateBudgetBar(total, limit){
+    const bar = document.getElementById("progressBar");
+    if(!limit) return bar.style.width = "0%";
+    const p = (total/limit)*100;
+    bar.style.width = p+"%";
+    bar.style.background = p>100?"red":"#00c853";
+    budgetText.innerText = `Budget: ${limit} | Used: ${total} | Left: ${limit-total}`;
+}
+
+// Chart
+function drawChart(data){
+    if(chart) chart.destroy();
+    chart = new Chart(chartCanvas, {
+        type:"pie",
+        data: {labels:Object.keys(data), datasets:[{data:Object.values(data)}]}
+    });
+}
+
+function updateBudgetUI(){
+    if(currentUser && budgets[currentUser]) budgetAmount.value = budgets[currentUser];
+    else budgetAmount.value = "";
+}
+
+updateTable("");
 </script>
 </body>
 </html>
