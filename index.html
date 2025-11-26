@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Multi-User Budget & Expense Manager</title>
+<style>
+body { font-family: Arial, sans-serif; background: #e9eff3; padding: 20px; }
+.container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.15); }
+h2, h3 { text-align:center; margin-bottom:15px; }
+input, select { width: 100%; padding: 10px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccc; }
+button { padding: 12px; cursor: pointer; background: #007bff; color: white; border-radius: 8px; font-size: 16px; margin-top:5px;}
+button:hover { background: #0056b3; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+th { background: #007bff; color: white; }
+.progress { height: 20px; background:#ccc; border-radius:10px; margin-top:10px; }
+.progress-bar { height: 100%; border-radius:10px; background:#28a745; }
+.warning { color:red; font-weight:bold; text-align:center; margin-top:10px; }
+.edit-btn, .delete-btn { background: #ffc107; color:black; cursor:pointer; border-radius:6px; padding:4px 6px;}
+.delete-btn { background:#dc3545; color:white; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔒 Secure Multi-User Budget & Expense Manager</h2>
+
+    <!-- Create Profile -->
+    <h3>Create Your Profile</h3>
+    <input type="text" id="newUser" placeholder="Enter your name">
+    <input type="password" id="newPassword" placeholder="Set 16-character password" maxlength="16">
+    <button onclick="createProfile()">Create Profile</button>
+
+    <hr>
+
+    <!-- Search Profile -->
+    <h3>Search User Profile</h3>
+    <input type="text" id="searchUser" placeholder="Enter user name">
+    <input type="password" id="searchPassword" placeholder="Enter password to edit (optional)">
+    <button onclick="searchProfile()">Search Profile</button>
+    <div id="currentUser" style="text-align:center; font-weight:bold; margin:10px 0;"></div>
+
+    <!-- Budget -->
+    <h3>Budget</h3>
+    <input type="number" id="budgetAmount" placeholder="Total Budget (Rs)">
+    <select id="budgetDays">
+        <option value="30">30 Days</option>
+        <option value="15">15 Days</option>
+        <option value="7">7 Days</option>
+    </select>
+    <button onclick="setBudget()">Save Budget</button>
+    <div id="budgetInfo"></div>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+
+    <!-- Expense Form -->
+    <h3>Add / Edit Expense</h3>
+    <input type="text" id="item" placeholder="Expense item">
+    <input type="number" id="amount" placeholder="Amount (Rs)">
+    <input type="date" id="date">
+    <select id="category">
+        <option>Food</option>
+        <option>Transport</option>
+        <option>Shopping</option>
+        <option>Entertainment</option>
+        <option>Other</option>
+    </select>
+    <button id="addBtn" onclick="addExpense()">Add Expense</button>
+    <button id="saveEditBtn" style="display:none;" onclick="saveEdit()">Save Changes</button>
+
+    <!-- Search Expenses -->
+    <h3>Search Expenses</h3>
+    <input type="text" id="searchInput" placeholder="Search item/category/date">
+    <button onclick="searchExpenses()">Search</button>
+    <button onclick="resetSearch()">Reset</button>
+
+    <div id="warning" class="warning"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Item</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody id="expenseTable"></tbody>
+    </table>
+</div>
+
+<script>
+// Data
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+let budgets = JSON.parse(localStorage.getItem("budgets")) || {}; // per user
+let currentUser = "";
+let isAdmin = false;
+let editIndex = null;
+
+// Create profile
+function createProfile(){
+    const name = document.getElementById("newUser").value.trim();
+    const pass = document.getElementById("newPassword").value;
+    if(!name || pass.length!==16) return alert("Enter name and 16-character password!");
+    if(users.find(u=>u.name===name)) return alert("User exists!");
+    users.push({name,password:pass});
+    localStorage.setItem("users", JSON.stringify(users));
+    alert("Profile created! Remember your password.");
+    document.getElementById("newUser").value="";
+    document.getElementById("newPassword").value="";
+}
+
+// Search profile
+function searchProfile(){
+    const name = document.getElementById("searchUser").value.trim();
+    const pass = document.getElementById("searchPassword").value;
+    if(!name) return alert("Enter user name!");
+    const user = users.find(u=>u.name===name);
+    if(!user){
+        alert("User not found!");
+        return;
+    }
+    currentUser = name;
+    isAdmin = (pass && pass===user.password);
+    document.getElementById("currentUser").innerText = isAdmin?"Editing as: "+currentUser:"Viewing: "+currentUser;
+    loadBudget();
+    updateTable();
+}
+
+// Load budget
+function loadBudget(){
+    if(budgets[currentUser]){
+        document.getElementById("budgetAmount").value = budgets[currentUser].amount;
+        document.getElementById("budgetDays").value = budgets[currentUser].days;
+    }else{
+        document.getElementById("budgetAmount").value = "";
+        document.getElementById("budgetDays").value = "30";
+    }
+}
+
+// Set budget
+function setBudget(){
+    if(!currentUser) return alert("Select user profile!");
+    if(!isAdmin) return alert("Password required to edit!");
+    const amount = Number(document.getElementById("budgetAmount").value);
+    const days = Number(document.getElementById("budgetDays").value);
+    budgets[currentUser] = {amount,days};
+    localStorage.setItem("budgets", JSON.stringify(budgets));
+    updateTable();
+}
+
+// Add expense
+function addExpense(){
+    if(!currentUser) return alert("Select profile!");
+    if(!isAdmin) return alert("Password required to edit!");
+    const item = document.getElementById("item").value;
+    const amount = document.getElementById("amount").value;
+    const date = document.getElementById("date").value;
+    const category = document.getElementById("category").value;
+    if(!item || !amount || !date) return alert("Fill all fields!");
+    expenses.push({user:currentUser,item,amount,date,category});
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+    updateTable();
+    clearInputs();
+}
+
+// Edit expense
+function editExpense(index){
+    if(!isAdmin) return alert("Password required to edit!");
+    editIndex = index;
+    const e = expenses[index];
+    document.getElementById("item").value = e.item;
+    document.getElementById("amount").value = e.amount;
+    document.getElementById("date").value = e.date;
+    document.getElementById("category").value = e.category;
+    document.getElementById("addBtn").style.display="none";
+    document.getElementById("saveEditBtn").style.display="inline-block";
+}
+
+// Save edit
+function saveEdit(){
+    expenses[editIndex] = {
+        user:currentUser,
+        item:document.getElementById("item").value,
+        amount:document.getElementById("amount").value,
+        date:document.getElementById("date").value,
+        category:document.getElementById("category").value
+    };
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+    updateTable();
+    clearInputs();
+    document.getElementById("addBtn").style.display="inline-block";
+    document.getElementById("saveEditBtn").style.display="none";
+}
+
+// Delete expense
+function deleteExpense(index){
+    if(!isAdmin) return alert("Password required to edit!");
+    expenses.splice(index,1);
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+    updateTable();
+}
+
+// Search expenses
+function searchExpenses(){
+    const q = document.getElementById("searchInput").value.toLowerCase();
+    updateTable(q);
+}
+function resetSearch(){
+    document.getElementById("searchInput").value="";
+    updateTable();
+}
+
+// Update table
+function updateTable(filter=null){
+    const table = document.getElementById("expenseTable");
+    table.innerHTML="";
+    let total=0;
+    expenses.forEach((e,i)=>{
+        if(e.user!==currentUser) return;
+        if(filter){
+            if(!e.item.toLowerCase().includes(filter) && !e.category.toLowerCase().includes(filter) && !e.date.includes(filter)) return;
+        }
+        total+=Number(e.amount);
+        table.innerHTML+=`
+            <tr>
+                <td>${e.user}</td>
+                <td>${e.item}</td>
+                <td>${e.amount}</td>
+                <td>${e.date}</td>
+                <td>${e.category}</td>
+                <td>${isAdmin?`<button class="edit-btn" onclick="editExpense(${i})">✏ Edit</button>`:""}</td>
+                <td>${isAdmin?`<button class="delete-btn" onclick="deleteExpense(${i})">🗑 Delete</button>`:""}</td>
+            </tr>
+        `;
+    });
+    if(budgets[currentUser]){
+        let remaining = budgets[currentUser].amount - total;
+        document.getElementById("budgetInfo").innerHTML=
+        `<b>Total Budget:</b> Rs ${budgets[currentUser].amount} | <b>Used:</b> Rs ${total} | <b>Remaining:</b> Rs ${remaining}`;
+        document.getElementById("progressBar").style.width = (total/budgets[currentUser].amount*100)+"%";
+        document.getElementById("progressBar").style.background = remaining<0?"red":"#28a745";
+        document.getElementById("warning").innerHTML = remaining<0?"⚠ Budget Overused!":"";
+    }
+}
+
+function clearInputs(){
+    document.getElementById("item").value="";
+    document.getElementById("amount").value="";
+    document.getElementById("date").value="";
+    document.getElementById("category").value="Food";
+}
+
+updateTable();
+</script>
+
+</body>
+</html>
